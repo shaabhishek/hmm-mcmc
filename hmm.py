@@ -7,6 +7,7 @@ sample_categorical = lambda logits: np.nonzero(multinomial(n=1, p=softmax(logits
 
 np.set_printoptions(precision=2)
 
+
 class HMM:
     def __init__(self, num_states, transition_matrix, start_dist, means, covars):
         self.num_states = num_states
@@ -51,8 +52,8 @@ class HMM:
     def __repr__(self):
         out = ""
         # out += f"Vocab Size: {self.vocab_size}, Num States: {self.num_states}\n"
-        out += f"Start Prob: \n{self.start_prob}\n"
-        out += f"Transition Matrix: \n{self.transition_matrix}\n"
+        out += f"Start Prob: \n{softmax(self.start_prob)}\n"
+        out += f"Transition Matrix: \n{softmax(self.transition_matrix, axis=-1)}\n"
         out += f"Mean: \n{self.means}\n"
         # import pdb; pdb.set_trace()
         out += f"Covar: \n{self.covars}\n"
@@ -62,14 +63,17 @@ class HMM:
     @classmethod
     def from_fixed_params(cls):
         num_states = 2
-        transition_matrix = log_softmax(np.eye(num_states), axis=-1)
-        start_dist = log_softmax(np.ones(num_states), axis=-1)
+        # transition_matrix = log_softmax(np.eye(num_states), axis=-1)
+        # start_dist = log_softmax(np.ones(num_states), axis=-1)
+        transition_matrix = np.log(np.array([[0.9, 0.1], [0.1, 0.9]]))
+        start_dist = np.log(np.array([0.3, 0.7]))
 
-        means = 20. * np.arange(num_states)
-        covars = 5. * np.ones(num_states)
+        means = np.array([-1., 1.])
+        covars = .4 * np.ones(num_states)
         self = cls(num_states, transition_matrix, start_dist, means, covars)
 
         return self
+
 
 # class HMM_old:
 #     def __init__(self):

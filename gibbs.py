@@ -26,7 +26,7 @@ class Gibbs:
         self.T = T
 
     def sample(self, x_sequence):
-        N = 10
+        N = 1000
         T = self.T
 
         Z_samples = np.empty((N, T), dtype=int)
@@ -42,9 +42,12 @@ class Gibbs:
 
 if __name__ == '__main__':
     model = HMM.from_fixed_params()
-    T = 10
+    T = 6
     Z, X = model.sample(T)
     gibbs = Gibbs(model, T)
     print(model)
     print(X, Z)
-    print(gibbs.sample(X))
+    samples = gibbs.sample(X)
+    print(samples[-10:])
+    # print(np.unique(samples[:,0], return_counts=True)[1]/ len(samples) )
+    print(samples.mean(0).round())
