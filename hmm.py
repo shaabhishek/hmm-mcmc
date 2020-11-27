@@ -69,7 +69,7 @@ class HMM:
         start_dist = np.log(np.array([0.3, 0.7]))
 
         means = np.array([-1., 1.])
-        covars = .4 * np.ones(num_states)
+        covars = .5 * np.ones(num_states)
         self = cls(num_states, transition_matrix, start_dist, means, covars)
 
         return self
