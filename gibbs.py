@@ -16,14 +16,16 @@ def sample_from_markov_blanket(t, T, obs_z_sequence, obs_x_sequence, model):
 
 
 def compute_gibbs_transition_dist(t, T, ob_z_sequence, obs_x_sequence, model):
-    assert ob_z_sequence.shape == obs_x_sequence.shape == (T,)
+    try:
+        assert ob_z_sequence.shape == obs_x_sequence.shape == (T,)
+    except:
+        import pdb; pdb.set_trace()
     support = np.arange(model.num_states)
-    # import pdb; pdb.set_trace()
     if t == 0:
         log_incoming_transition = model.start_prob[support]
     else:
         log_incoming_transition = model.transition_matrix[ob_z_sequence[t]][support]
-    log_outgoing_transition = model.transition_matrix[:, ob_z_sequence[t]] if t < T else np.zeros_like(support)  # (K,)
+    log_outgoing_transition = model.transition_matrix[:, ob_z_sequence[t]] if t < (T-1) else np.zeros_like(support)  # (K,)
     log_emission_density = np.array([model.emission_loglikelihood(z, obs_x_sequence[t]) for z in support])  # (K,)
     assert log_emission_density.shape == log_incoming_transition.shape == log_outgoing_transition.shape == (
         model.num_states,)
@@ -54,12 +56,11 @@ class Gibbs:
         self.model = model
         self.T = T
 
-    def sample(self, x_sequence):
-        N = 100
+    def sample(self, N, x_sequence, initial_sample=None):
         T = self.T
 
         Z_samples = np.empty((N, T), dtype=int)
-        Z_samples[0] = 0
+        Z_samples[0] = initial_sample if initial_sample is not None else 0
 
         for n in range(1, N):
             Z_samples[n] = Z_samples[n - 1]
@@ -84,20 +85,21 @@ def compute_omega_gibbs(X, model):
 
 
 def generate_samples():
-    samples = gibbs.sample(X)
+    model = HMM.from_fixed_params()
+    T = 13
+    Z, X = model.sample(T)
+    print(model)
+    print(f"X: {X}, True Z: {Z}")
+
+    # X = X*0 + 1
+    gibbs = Gibbs(model, T)
+
+    samples = gibbs.sample(10, X)
     print(f"Last 10 samples: \n{samples[-10:]}")
     # print(np.unique(samples[:, 0], return_counts=True)[1] / len(samples))
     print(f"Mean sample: {samples.mean(0).round(1)}")
 
 
 if __name__ == '__main__':
-    model = HMM.from_fixed_params()
-    T = 5
-    Z, X = model.sample(T)
-    # X = X*0 + 1
-    gibbs = Gibbs(model, T)
-    print(model)
-    print(f"X: {X}, True Z: {Z}")
     generate_samples()
-
-    compute_omega_gibbs(X, model)
+    # compute_omega_gibbs(X, model)

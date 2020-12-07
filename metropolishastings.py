@@ -47,7 +47,7 @@ class MH:
 if __name__ == '__main__':
     model = HMM.from_fixed_params()
     T = 5
-    Z, X = model.sample(T)
+    Z, X = model.sample(10, 10, None)
     mh = MH(model, T)
     print(model)
     print(X, Z)
