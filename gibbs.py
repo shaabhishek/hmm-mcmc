@@ -15,21 +15,22 @@ def sample_from_markov_blanket(t, T, obs_z_sequence, obs_x_sequence, model):
     return z_t
 
 
-def compute_gibbs_transition_dist(t, T, ob_z_sequence, obs_x_sequence, model):
+def compute_gibbs_transition_dist(t, T, obs_z_sequence, obs_x_sequence, model):
     try:
-        assert ob_z_sequence.shape == obs_x_sequence.shape == (T,)
+        assert obs_z_sequence.shape == obs_x_sequence.shape == (T,)
+
+        support = np.arange(model.num_states)
+        if t == 0:
+            log_incoming_transition = model.start_prob[support]
+        else:
+            log_incoming_transition = model.transition_matrix[obs_z_sequence[t]][support]
+        log_outgoing_transition = model.transition_matrix[:, obs_z_sequence[t]] if t < (T - 1) else np.zeros_like(support)  # (K,)
+        log_emission_density = np.array([model.emission_loglikelihood(z, obs_x_sequence[t]) for z in support])  # (K,)
+        assert log_emission_density.shape == log_incoming_transition.shape == log_outgoing_transition.shape == (
+            model.num_states,)
+        logits_z = log_incoming_transition + log_outgoing_transition + log_emission_density
     except:
         import pdb; pdb.set_trace()
-    support = np.arange(model.num_states)
-    if t == 0:
-        log_incoming_transition = model.start_prob[support]
-    else:
-        log_incoming_transition = model.transition_matrix[ob_z_sequence[t]][support]
-    log_outgoing_transition = model.transition_matrix[:, ob_z_sequence[t]] if t < (T-1) else np.zeros_like(support)  # (K,)
-    log_emission_density = np.array([model.emission_loglikelihood(z, obs_x_sequence[t]) for z in support])  # (K,)
-    assert log_emission_density.shape == log_incoming_transition.shape == log_outgoing_transition.shape == (
-        model.num_states,)
-    logits_z = log_incoming_transition + log_outgoing_transition + log_emission_density
     return logits_z
 
 
