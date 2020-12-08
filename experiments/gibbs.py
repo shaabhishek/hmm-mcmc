@@ -4,7 +4,6 @@ import numpy as np
 from scipy.special import softmax
 from scipy.stats import multinomial
 
-from hmm import HMM
 
 
 def sample_from_markov_blanket(t, T, obs_z_sequence, obs_x_sequence, model):
@@ -14,24 +13,24 @@ def sample_from_markov_blanket(t, T, obs_z_sequence, obs_x_sequence, model):
     z_t = np.random.choice(np.arange(model.num_states), p=softmax(logits_z))
     return z_t
 
-
 def compute_gibbs_transition_dist(t, T, ob_z_sequence, obs_x_sequence, model):
-    assert ob_z_sequence.shape == obs_x_sequence.shape == (T,)
+#     assert ob_z_sequence.shape == obs_x_sequence.shape == (T,)
     support = np.arange(model.num_states)
     # import pdb; pdb.set_trace()
     if t == 0:
-        log_incoming_transition = model.start_prob[support]
+        log_incoming_transition = np.log(model.start_prob[support])
     else:
-        log_incoming_transition = model.transition_matrix[ob_z_sequence[t]][support]
-    log_outgoing_transition = model.transition_matrix[:, ob_z_sequence[t]] if t < T else np.zeros_like(support)  # (K,)
+        log_incoming_transition = np.log(model.transition_matrix[ob_z_sequence[t-1]][support])
+    if t<T-1:
+        log_outgoing_transition = np.log(model.transition_matrix[:, ob_z_sequence[t+1]][support]) # (K,)
+    else: log_outgoing_transition = np.zeros(model.num_states)
     log_emission_density = np.array([model.emission_loglikelihood(z, obs_x_sequence[t]) for z in support])  # (K,)
     assert log_emission_density.shape == log_incoming_transition.shape == log_outgoing_transition.shape == (
         model.num_states,)
     logits_z = log_incoming_transition + log_outgoing_transition + log_emission_density
     return logits_z
 
-
-def transition_kernel(obs_x_sequence, model: HMM):
+def transition_kernel(obs_x_sequence, model):
     T = len(obs_x_sequence)
     K = model.num_states
     # transition kernel size k^t * k^t
