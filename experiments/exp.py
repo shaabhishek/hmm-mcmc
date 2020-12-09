@@ -31,7 +31,10 @@ elif alg=='mh_prior':
     sampler = MH(model, T,N)
 else:
     raiseError('Invalid Option')
-s,acc = sampler.sample(X)
 
-with open('results/{}_k_{}_t_{}.pkl'.format(alg,K,T),'wb') as f:
-    pickle.dump((s,acc),f)
+
+import pdb; pdb.set_trace()
+# s,acc = sampler.sample(X)
+
+# with open('results/{}_k_{}_t_{}.pkl'.format(alg,K,T),'wb') as f:
+#     pickle.dump((s,acc),f)

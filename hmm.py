@@ -68,8 +68,8 @@ class HMM:
         transition_matrix = np.log(np.array([[0.9, 0.1], [0.1, 0.9]]))
         start_dist = np.log(np.array([0.3, 0.7]))
 
-        means = np.array([-1., 1.])
-        covars = .4 * np.ones(num_states)
+        means = np.array([0., 1.])
+        covars = 1. * np.ones(num_states)
         self = cls(num_states, transition_matrix, start_dist, means, covars)
 
         return self

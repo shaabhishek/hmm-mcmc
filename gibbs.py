@@ -23,8 +23,8 @@ def compute_gibbs_transition_dist(t, T, obs_z_sequence, obs_x_sequence, model):
         if t == 0:
             log_incoming_transition = model.start_prob[support]
         else:
-            log_incoming_transition = model.transition_matrix[obs_z_sequence[t]][support]
-        log_outgoing_transition = model.transition_matrix[:, obs_z_sequence[t]] if t < (T - 1) else np.zeros_like(support)  # (K,)
+            log_incoming_transition = model.transition_matrix[obs_z_sequence[t-1]][support]
+        log_outgoing_transition = model.transition_matrix[:, obs_z_sequence[t+1]] if t < (T - 1) else np.zeros_like(support)  # (K,)
         log_emission_density = np.array([model.emission_loglikelihood(z, obs_x_sequence[t]) for z in support])  # (K,)
         assert log_emission_density.shape == log_incoming_transition.shape == log_outgoing_transition.shape == (
             model.num_states,)
@@ -82,12 +82,12 @@ def compute_omega_gibbs(X, model):
     # print(eigvals)
     # print(eigvecs)
     omega = w[1]
-    print(f"Eigvals: {w}, Omega: {omega:.2f}, Pi: {pi.round(1)}")
+    print(f"Eigvals: {w}, Omega: {omega:.5f}, Pi: {pi.round(1)}")
 
 
 def generate_samples():
     model = HMM.from_fixed_params()
-    T = 13
+    T = 8
     Z, X = model.sample(T)
     print(model)
     print(f"X: {X}, True Z: {Z}")
@@ -95,12 +95,13 @@ def generate_samples():
     # X = X*0 + 1
     gibbs = Gibbs(model, T)
 
-    samples = gibbs.sample(10, X)
+    samples = gibbs.sample(100, X)
     print(f"Last 10 samples: \n{samples[-10:]}")
     # print(np.unique(samples[:, 0], return_counts=True)[1] / len(samples))
     print(f"Mean sample: {samples.mean(0).round(1)}")
+    return X, model, samples
 
 
 if __name__ == '__main__':
-    generate_samples()
-    # compute_omega_gibbs(X, model)
+    X, model, samples = generate_samples()
+    compute_omega_gibbs(X, model)
