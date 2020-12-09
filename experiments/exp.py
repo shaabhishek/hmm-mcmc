@@ -26,10 +26,12 @@ with open('data/data_t_{}_k_{}.pkl'.format(T,K),'rb') as f:
 if alg=='gibbs':
     sampler = Gibbs(model, T,N)
 elif alg=='mh_uniform':
+    sampler = MH_Uniform(model, T,N)
+elif alg=='mh_prior':
     sampler = MH(model, T,N)
 else:
     raiseError('Invalid Option')
-s = sampler.sample(X)
+s,acc = sampler.sample(X)
 
 with open('results/{}_k_{}_t_{}.pkl'.format(alg,K,T),'wb') as f:
-    pickle.dump(s,f)
+    pickle.dump((s,acc),f)

@@ -84,7 +84,7 @@ class Gibbs:
             for t in range(T):
                 Z_samples[n, t] = sample_from_markov_blanket(t, T, Z_samples[n], x_sequence, self.model)
 
-        return Z_samples
+        return Z_samples,1.
 
 
 
