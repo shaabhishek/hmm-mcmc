@@ -5,8 +5,10 @@ import gibbs as gibbs1
 import experiments.gibbs as gibbs2
 import hmm as hmm1
 import experiments.hmm as hmm2
-
-
+import ipdb
+from scipy.special import logsumexp
+from scipy.stats import norm
+from itertools import product
 def loaddata(T, K):
     with open('experiments/data/data_t_{}_k_{}.pkl'.format(T, K), 'rb') as f:
         Z, X = pickle.load(f)
@@ -33,11 +35,60 @@ def loaddatamodel(T, K):
     model = loadmodel(K)
     return (Z, X), model
 
-def loadtransitionmatrix(T, K, modelversion=2):
+def load_gibbs_transitionmatrix(T, K, modelversion=2):
     Z, X = loaddata(T, K)
     model = loadmodel(K, modelversion)
     return gibbs1.transition_kernel(X, model) if modelversion == 1 else gibbs2.transition_kernel(X, model)
     # return gibbs2.transition_kernel(X, model)
+
+
+def load_mh_prior_transitionmatrix(T,K):
+    Z, X = loaddata(T, K)
+    with open('experiments/data/hmm_k_{}.pkl'.format(K),'rb') as f:
+        d = pickle.load(f)
+    # p(x|z)
+    l = norm.logpdf(np.ones(K)*X[0],loc = d['means'],scale = d['stds'])
+    for i in range(1,T):
+        l = list(product(l,norm.logpdf(np.ones(K)*X[i],loc = d['means'],scale = d['stds'])))
+        l = [np.hstack(t) for t in l]
+    table = np.sum(np.vstack(l),axis=1)
+    # p(z)
+    p_z_table = np.log(d['transition_matrix'].flatten())
+    f = lambda t: t[1]*K+t[0]
+    log_z = [np.log(d['start_prob'][z[0]]) + np.sum(p_z_table[list(map(f,zip(z[:-1],z[1:])))]) \
+         for z in product(np.arange(K),repeat = T)]
+
+    n = K**T
+    mh_prior_transition_kernel = np.zeros([n,n])
+    for i in range(n):
+        mh_prior_transition_kernel[:,i] = np.minimum(table-table[i],0.)+log_z
+        mh_prior_transition_kernel[i,i] = -np.infty
+        mh_prior_transition_kernel[i,i] = np.log(-np.expm1(logsumexp(mh_prior_transition_kernel[:,i])))
+    return np.exp(mh_prior_transition_kernel) 
+
+def load_mh_uniform_transitionmatrix(T,K):
+    Z, X = loaddata(T, K)
+    with open('experiments/data/hmm_k_{}.pkl'.format(K),'rb') as f:
+        d = pickle.load(f)
+    # p(x|z)
+    l = norm.logpdf(np.ones(K)*X[0],loc = d['means'],scale = d['stds'])
+    for i in range(1,T):
+        l = list(product(l,norm.logpdf(np.ones(K)*X[i],loc = d['means'],scale = d['stds'])))
+        l = [np.hstack(t) for t in l]
+    table = np.sum(np.vstack(l),axis=1)
+    # p(z)
+    p_z_table = np.log(d['transition_matrix'].flatten())
+    f = lambda t: t[1]*K+t[0]
+    log_z = [np.log(d['start_prob'][z[0]]) + np.sum(p_z_table[list(map(f,zip(z[:-1],z[1:])))]) \
+         for z in product(np.arange(K),repeat = T)]
+
+    n = K**T
+    mh_uniform_transition_kernel = np.zeros([n,n])
+    for i in range(n):
+        mh_uniform_transition_kernel[:,i] = np.minimum(table-table[i]+log_z-log_z[i],0)+np.log(1./n)
+        mh_uniform_transition_kernel[i,i] = -np.infty
+        mh_uniform_transition_kernel[i,i] = np.log(-np.expm1(logsumexp(mh_uniform_transition_kernel[:,i])))
+    return np.exp(mh_uniform_transition_kernel)
 
 def test_two_versions():
     for T in  range(2, 10):
@@ -65,23 +116,39 @@ def loadpi(T, K, alg,):
     print(f"Loaded Pi Vector from {filename}. Shape: {pi_vector.shape}")
     return pi_vector
 
-def compute_pi(T, K):
+def compute_pi(T, K,alg):
     (_,X), model = loaddatamodel(T, K)
-    rw_matrix = gibbs2.transition_kernel(X, model).T  # As defined in the course
+    if alg=='gibbs':
+        rw_matrix = gibbs2.transition_kernel(X, model).T  # As defined in the course
+    elif alg=='mh_uniform':
+        rw_matrix = load_mh_uniform_transitionmatrix(T,K)
+    elif alg=='mh_prior':
+        rw_matrix = load_mh_prior_transitionmatrix(T,K)
     eigvals, eigvecs = np.linalg.eig(rw_matrix)
     order = np.argsort(eigvals)[::-1]
     pi = eigvecs[:, order[0]]
+    real = np.real(pi)
+    
+    assert np.abs(np.linalg.norm(real)-np.linalg.norm(pi))<1e-10
+    pi = np.copy(real)
     pi = pi / pi.sum()
 
     w = eigvals[order]
     omega = w[1]
-    print(f"T: {T}, K: {K}, Omega: {omega:.5f}, Pi: {pi.round(1)}")
+    assert np.abs(np.real(omega)-np.linalg.norm(omega))<1e-10
+    omega = np.real(omega)
+    print(f"T: {T}, K: {K}, Omega: {omega:.5f}, Pi: {pi}")
     return pi
 
 
 
 if __name__ == '__main__':
     for t in range(2, 14):
-        # pi = compute_pi(T=t, K=2)
+        pi = compute_pi(T=t, K=2,alg='mh_prior')
         # savepi(t, K=2, alg='gibbs', pi_vector=pi)
-        loadpi(t, K=2, alg='gibbs')
+
+        #loadpi(t, K=2, alg='gibbs')
+    for k in range(3, 7):
+        #pi = compute_pi(5, K=k)
+        #savepi(5, K=k, alg='gibbs', pi_vector=pi)
+        loadpi(5, K=k, alg='gibbs')
