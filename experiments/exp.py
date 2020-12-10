@@ -11,11 +11,13 @@ parser.add_argument('-K', type=int, default = 2)
 parser.add_argument('-T', type=int, default = 2)
 parser.add_argument('-alg',type=str,default='gibbs')
 parser.add_argument('-N',type=int,default=50000)
+parser.add_argument('-trial',type=int,default=0)
 args = parser.parse_args()
 K = args.K
 T = args.T
 alg = args.alg
 N = args.N
+trial = args.trial
 
 with open('data/hmm_k_{}.pkl'.format(K),'rb') as f:
     d = pickle.load(f)
@@ -33,5 +35,5 @@ else:
     raiseError('Invalid Option')
 s,acc = sampler.sample(X)
 
-with open('results/{}_k_{}_t_{}.pkl'.format(alg,K,T),'wb') as f:
+with open('results/{}_k_{}_t_{}_trial_{}.pkl'.format(alg,K,T,trial),'wb') as f:
     pickle.dump((s,acc),f)
