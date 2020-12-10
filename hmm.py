@@ -1,5 +1,5 @@
 import numpy as np
-from hmmlearn import hmm as hmm
+#from hmmlearn import hmm as hmm
 from scipy.special import log_softmax, softmax
 from scipy.stats import dirichlet, multivariate_normal, multinomial
 
