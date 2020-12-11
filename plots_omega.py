@@ -48,8 +48,7 @@ def collect_results(N):
 def plot_results_omega_K(results_df):
     idxs = pd.IndexSlice
 
-    K_vals = np.array(list(results.keys()))[:, 0]
-    T_vals = np.array(list(results.keys()))[:, 1]
+    T_vals = np.stack(results_df.keys().values)[:, 1]
 
     for T in np.unique(T_vals):
         subset = results_df.loc[:, idxs[:, T]]
@@ -61,14 +60,14 @@ def plot_results_omega_K(results_df):
     plt.ylabel('$\omega_{\pi}$')
     plt.xlabel('K')
     plt.legend()
-    plt.show()
-
+    # plt.show()
+    plt.savefig(f"experiments/plots/omega_k_n_{len(subset)}.png")
+    plt.close()
 
 def plot_results_omega_T(results_df):
     idxs = pd.IndexSlice
 
-    K_vals = np.array(list(results.keys()))[:, 0]
-    T_vals = np.array(list(results.keys()))[:, 1]
+    K_vals = np.array(list(results_df.keys()))[:, 0]
 
     for K in np.unique(K_vals):
         subset = results_df.loc[:, idxs[K, :]]
@@ -80,23 +79,29 @@ def plot_results_omega_T(results_df):
     plt.ylabel('$\omega_{\pi}$')
     plt.xlabel('T')
     plt.legend()
-    plt.show()
+    # plt.show()
+    plt.savefig(f"experiments/plots/omega_t_n_{len(subset)}.png")
+    plt.close()
 
 
 def loadresults(N):
-    results_df = pd.read_csv(f'experiments/data/df_n_{N}.csv', header=[0, 1], index_col=0)
+    results_df = pd.read_csv(f'experiments/data/omega_K_T_df_n_{N}.csv', header=[0, 1], index_col=0)
     results_df.columns.names = ['K', 'T']
     return results_df
 
 
 def saveresults(results_df, N):
-    results_df.to_csv(f'experiments/data/df_n_{N}.csv')
+    results_df.to_csv(f'experiments/data/omega_K_T_df_n_{N}.csv')
 
 
-if __name__ == '__main__':
+def run_experiments():
     N = 500
     # results = collect_results(N)
     # saveresults(results, N)
     results = loadresults(N)
     plot_results_omega_K(results)
-    # plot_results_omega_T(results)
+    plot_results_omega_T(results)
+
+
+if __name__ == '__main__':
+    run_experiments()
