@@ -5,7 +5,6 @@ import gibbs as gibbs1
 import experiments.gibbs as gibbs2
 import hmm as hmm1
 import experiments.hmm as hmm2
-import ipdb
 from scipy.special import logsumexp
 from scipy.stats import norm
 from itertools import product
