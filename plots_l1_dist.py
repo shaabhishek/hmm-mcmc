@@ -39,16 +39,16 @@ def plot_results_l1_distances(results_df):
 
     KT_vals = set((k, t) for k, t, _ in results_df.keys().values)
     # T_vals = np.array(list(results_df.keys()))[:, 1]
-    print(len(KT_vals))
+    print(f'Total K-T combinations: {len(KT_vals)}')
 
     for (K, T) in KT_vals:
-        print(K, T)
+        print(f'Plotting K:{K}, T:{T}')
         subset = results_df.loc[:, idxs[K, T, :]]
         means = subset.mean(0).droplevel([0, 1])
         stds = subset.std(0).droplevel([0, 1])
         plt.errorbar(means.index.to_list(), means.to_list(), stds * 2, label=f"K:{K},T:{T}")
         plt.legend()
-        plt.ylabel('$\hat{\pi} - \pi$')
+        plt.ylabel('$\|\hat{\pi} - \pi\|_1$')
         plt.xlabel('Number of samples')
         plt.savefig(f"experiments/plots/l1_distances_k_{K}_t_{T}.png")
         plt.close()
