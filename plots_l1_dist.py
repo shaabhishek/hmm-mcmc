@@ -34,7 +34,7 @@ def collect_results(N):
     return results_df
 
 
-def plot_results_l1_distances(results_df):
+def plot_results_l1_distances_KT(results_df):
     idxs = pd.IndexSlice
 
     KT_vals = set((k, t) for k, t, _ in results_df.keys().values)
@@ -54,6 +54,61 @@ def plot_results_l1_distances(results_df):
         plt.close()
 
 
+def plot_results_l1_distances_K(results_df):
+    print(results_df)
+    idxs = pd.IndexSlice
+
+    K_vals = np.array(list(results_df.keys())).astype(int)[:, 0]
+    T_vals = np.array(list(results_df.keys())).astype(int)[:, 1]
+    print(K_vals)
+
+    for K in np.unique(K_vals):
+        for T in np.unique(T_vals):
+            try:
+                subset = results_df.loc[:, idxs[str(K), str(T), :]]
+                if subset.shape[1] == 0: continue
+            except:
+                continue
+            print(f'Plotting K:{K}, T:{T}')
+            means = subset.mean(0).droplevel([0,1])
+            stds = subset.std(0).droplevel([0,1])
+            plt.errorbar(means.index.to_list(), means.to_list(), stds * 2, label=f"T:{T}")
+        plt.legend()
+        plt.ylabel('$\|\hat{\pi} - \pi\|_1$')
+        plt.xlabel('Number of samples')
+        plt.savefig(f"experiments/plots/l1_distances_k_{K}.png")
+        plt.close()
+        # plt.show()
+        # break
+
+def plot_results_l1_distances_T(results_df):
+    print(results_df)
+    idxs = pd.IndexSlice
+
+    K_vals = np.array(list(results_df.keys())).astype(int)[:, 0]
+    T_vals = np.array(list(results_df.keys())).astype(int)[:, 1]
+    print(K_vals)
+
+    for T in np.unique(K_vals):
+        for K in np.unique(T_vals):
+            try:
+                subset = results_df.loc[:, idxs[str(K), str(T), :]]
+                if subset.shape[1] == 0: continue
+            except:
+                continue
+            print(f'Plotting K:{K}, T:{T}')
+            means = subset.mean(0).droplevel([0,1])
+            stds = subset.std(0).droplevel([0,1])
+            plt.errorbar(means.index.to_list(), means.to_list(), stds * 2, label=f"K:{K}")
+        plt.legend()
+        plt.ylabel('$\|\hat{\pi} - \pi\|_1$')
+        plt.xlabel('Number of samples')
+        plt.savefig(f"experiments/plots/l1_distances_T_{T}.png")
+        plt.close()
+        # plt.show()
+        # break
+
+
 def loadresults(N):
     results_df = pd.read_csv(f'experiments/data/l1_distances_df_n_{N}.csv', header=[0, 1, 2], index_col=0)
     results_df.columns.names = ['K', 'T', 'sample_size']
@@ -69,7 +124,9 @@ def do_experiments():
     # results = collect_results(N)
     # saveresults(results, N)
     l1_distances_df = loadresults(N)
-    plot_results_l1_distances(l1_distances_df)
+    # plot_results_l1_distances_KT(l1_distances_df)
+    # plot_results_l1_distances_K(l1_distances_df)
+    plot_results_l1_distances_T(l1_distances_df)
 
 
 if __name__ == '__main__':
