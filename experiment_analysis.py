@@ -5,7 +5,6 @@ import gibbs as gibbs1
 import experiments.gibbs as gibbs2
 import hmm as hmm1
 import experiments.hmm as hmm2
-import ipdb
 from scipy.special import logsumexp
 from scipy.stats import norm
 from itertools import product
@@ -98,7 +97,7 @@ def test_two_versions():
             import ipdb; ipdb.set_trace()
 
 
-def savepi(T, K, alg, pi_vector, ):
+def savepi(T, K, alg, pi_vector):
     assert pi_vector.shape == (K**T,)
     filename = f'experiments/data/pi_{alg}_k_{K}_t_{T}.pkl'
     with open(filename, 'wb') as f:
@@ -141,14 +140,78 @@ def compute_pi(T, K,alg):
     return pi
 
 
+def compute_omega(T, K, alg):
+    (_, X), model = loaddatamodel(T, K)
+    if alg == 'gibbs':
+        rw_matrix = gibbs2.transition_kernel(X, model).T  # As defined in the course
+    elif alg == 'mh_uniform':
+        rw_matrix = load_mh_uniform_transitionmatrix(T, K)
+    elif alg == 'mh_prior':
+        rw_matrix = load_mh_prior_transitionmatrix(T, K)
+    else: raise
+    eigvals = np.linalg.eigvals(rw_matrix)
+    order = np.argsort(eigvals)[::-1]
+
+    w = eigvals[order]
+    omega = w[1]
+    assert np.abs(np.real(omega) - np.linalg.norm(omega)) < 1e-10
+    omega = np.real(omega)
+    print(f"T: {T}, K: {K}, Omega: {omega:.5f}")
+    return omega
+
+def collect_results_pi():
+    for K in range(2, 7):
+        for T in range(2, 14):
+            if K**T > 10000: continue
+            try:
+                pi = compute_pi(T=T, K=K, alg='gibbs')
+                savepi(T=T, K=K, alg='gibbs', pi_vector=pi)
+            except FileNotFoundError:
+                continue
+
+def collect_results_omega():
+    omega_dict = {}
+    for alg in ['gibbs', 'mh_uniform', 'mh_prior']:
+        for K in range(2, 7):
+            for T in range(2, 14):
+                if K**T > 10000: continue
+                try:
+                    omega = compute_omega(T=T, K=K, alg=alg)
+                    omega_dict[(alg, K, T)] = omega
+                except FileNotFoundError:
+                    continue
+    print(omega_dict)
+    saveomega(omega_dict)
+
+def saveomega(omega_dict):
+    assert isinstance(omega_dict, dict)
+    filename = f'experiments/data/omega_dict_for_data.pkl'
+    with open(filename, 'wb') as f:
+        pickle.dump(omega_dict, f)
+    print(f"Saved to {filename}")
+
+def loadomega():
+    filename = f'experiments/data/omega_dict_for_data.pkl'
+    with open(filename, 'rb') as f:
+        omega_dict = pickle.load(f)
+
+    assert isinstance(omega_dict, dict)
+    print(f"Loaded Omega Dict from {filename}. Keys (Alg, K, T): {omega_dict.keys()}")
+    return omega_dict
+
+
+def do_experiments():
+    # collect_results_pi()
+    collect_results_omega()
 
 if __name__ == '__main__':
-    for t in range(2, 14):
-        pi = compute_pi(T=t, K=2,alg='mh_prior')
+    do_experiments()
+    # for t in range(2, 14):
+    #     pi = compute_pi(T=t, K=2,alg='mh_prior')
         # savepi(t, K=2, alg='gibbs', pi_vector=pi)
 
         #loadpi(t, K=2, alg='gibbs')
-    for k in range(3, 7):
+    # for k in range(3, 7):
         #pi = compute_pi(5, K=k)
         #savepi(5, K=k, alg='gibbs', pi_vector=pi)
-        loadpi(5, K=k, alg='gibbs')
+        # loadpi(5, K=k, alg='gibbs')
