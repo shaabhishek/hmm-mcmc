@@ -3,18 +3,13 @@ from itertools import product
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib import rcParams
-rcParams['font.family'] = 'sans-serif'
-rcParams['font.size'] = 14
-from joblib import Parallel, delayed
 from scipy.special import logsumexp
 from scipy.stats import norm
 
 from experiment_analysis import compute_pi, loadmodel, loaddata
-from experiments import gibbs
-from experiments.hmm import HMM
-
+import gibbs
+from hmm import HMM
+import ipdb
 
 def load_mh_prior_transitionmatrix(T,K, model:HMM, X):
     # Z, X = loaddata(T, K)
@@ -98,7 +93,7 @@ def compute_omega(T, K, alg, model, X):
 #     print(omega_dict)
 #     saveomega(omega_dict)
 
-def collect_results(N):
+def collect_results(N,K,T):
     omega_dict = {}
     KT_pairs = [(2,T) for T in range(2, 14)] + [(K,5) for K in range(2, 7)]
     print(KT_pairs)
@@ -124,43 +119,6 @@ def collect_results(N):
     results_df = pd.DataFrame(omega_dict)
     return results_df
 
-
-def plot_results_omega_K(results_df):
-    T=5
-    idxs = pd.IndexSlice
-
-    for alg in ['gibbs', 'mh_uniform', 'mh_prior']:
-        subset = results_df.loc[:, idxs[alg, :, str(T)]]
-        means = 1-subset.mean(0).droplevel([0,2])
-        stds = subset.std(0).droplevel([0,2])
-        # plt.plot(subset.index.to_list(), subset.to_list(), label=f"{alg}")
-        plt.errorbar(means.index.to_list(), means.to_list(), yerr=stds/np.sqrt(len(subset)), capsize=4, label=f"{alglabels[alg]}")
-
-    plt.ylabel('$1 - \omega_{\pi}$')
-    plt.xlabel('K')
-    plt.legend()
-    # plt.ylim(.4, 1.)
-    # plt.show()
-    plt.savefig(f"experiments/plots/omega_t_5_vary_k_vary_alg_n_{len(subset)}.png")
-    plt.close()
-
-def plot_results_omega_T(results_df):
-    idxs = pd.IndexSlice
-
-    K=2
-    for alg in ['gibbs', 'mh_uniform', 'mh_prior']:
-        subset = results_df.loc[:, idxs[alg, str(K), :]]
-        means = 1-subset.mean(0).droplevel([0,1])
-        stds = subset.std(0).droplevel([0,1])
-        plt.errorbar(means.index.to_list(), means.to_list(), yerr=stds/np.sqrt(len(subset)), capsize=4, label=f"{alglabels[alg]}")
-
-    plt.ylabel('$1 - \omega_{\pi}$')
-    plt.xlabel('T')
-    # plt.ylim(.4, 1.)
-    plt.legend()
-    # plt.show()
-    plt.savefig(f"experiments/plots/omega_k_2_vary_t_vary_alg_n_{len(subset)}.png")
-    plt.close()
 
 
     # alg = 'gibbs'
@@ -190,13 +148,12 @@ def saveresults(results_df, N):
     results_df.to_csv(f'experiments/data/omega_K_T_df_n_{N}.csv')
 
 
-def run_experiments():
-    N = 24
-    # results = collect_results(N)
+def run_experiments(K=2,T=2,N=20):
+    results = collect_results(K,T,N)
     # saveresults(results, N)
-    results = loadresults(N)
-    plot_results_omega_K(results)
-    plot_results_omega_T(results)
+    #results = loadresults(N)
+    #plot_results_omega_K(results)
+    #plot_results_omega_T(results)
 
 
 if __name__ == '__main__':

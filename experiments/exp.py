@@ -33,6 +33,6 @@ elif alg=='mh_prior':
     sampler = MH(model, T,N)
 else:
     raiseError('Invalid Option')
-
+s,acc = sampler.sample(X)
 with open('results/{}_k_{}_t_{}_trial_{}.pkl'.format(alg,K,T,trial),'wb') as f:
     pickle.dump((s,acc),f)
