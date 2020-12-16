@@ -69,6 +69,7 @@ def generate_samples(gibbs,X):
     return samples
 
 
+
 class Gibbs:
     def __init__(self, model, T, N):
         self.model = model

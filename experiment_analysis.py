@@ -1,9 +1,7 @@
 import pickle
 import numpy as np
 
-import gibbs as gibbs1
 import experiments.gibbs as gibbs2
-import hmm as hmm1
 import experiments.hmm as hmm2
 from scipy.special import logsumexp
 from scipy.stats import norm

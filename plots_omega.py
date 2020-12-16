@@ -5,6 +5,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
+
+from experiments.gibbs import compute_gibbs_transition_dist
+
 rcParams['font.family'] = 'sans-serif'
 rcParams['font.size'] = 14
 from joblib import Parallel, delayed
@@ -65,6 +68,20 @@ def load_mh_uniform_transitionmatrix(T,K, model:HMM, X):
         mh_uniform_transition_kernel[i,i] = -np.infty
         mh_uniform_transition_kernel[i,i] = np.log(-np.expm1(logsumexp(mh_uniform_transition_kernel[:,i])))
     return np.exp(mh_uniform_transition_kernel)
+
+
+# def compute_Wx_gibbs(rw_matrix_gibbs, obs_x_sequence, model, x):
+#     T = len(obs_x_sequence)
+#     K = model.num_states
+#     states = np.vstack(list(product(range(K), repeat=T)))
+#     y = np.zeros_like(x)
+#     for i, current_state in enumerate(states):
+#         for t in range(T):
+#             outgoing_logits = compute_gibbs_transition_dist(t, T, current_state, obs_x_sequence, model)
+#             outgoing_state_idxs = np.where((np.delete(states, t, axis=1) == np.delete(current_state, t)).all(axis=1))[0]
+#             y[outgoing_state_idxs] = rw_matrix_gibbs[i][outgoing_state_idxs] * x[outgoing_state_idxs]
+#     return y
+# linearoperator = compute_Wx_gibbs()
 
 def compute_omega(T, K, alg, model, X):
     if alg == 'gibbs':
@@ -130,16 +147,19 @@ def plot_results_omega_K(results_df):
     idxs = pd.IndexSlice
 
     for alg in ['gibbs', 'mh_uniform', 'mh_prior']:
-        subset = results_df.loc[:, idxs[alg, :, str(T)]]
+        subset = results_df.loc[:, idxs[alg, :, T]]
         means = 1-subset.mean(0).droplevel([0,2])
         stds = subset.std(0).droplevel([0,2])
         # plt.plot(subset.index.to_list(), subset.to_list(), label=f"{alg}")
         plt.errorbar(means.index.to_list(), means.to_list(), yerr=stds/np.sqrt(len(subset)), capsize=4, label=f"{alglabels[alg]}")
 
     plt.ylabel('$1 - \omega_{\pi}$')
-    plt.xlabel('K')
+    plt.xlabel('Hidden State Dimension (K)')
+    plt.xticks(means.index.to_list())
     plt.legend()
-    # plt.ylim(.4, 1.)
+    plt.yticks(np.linspace(0, .6, 7))
+    plt.ylim(0, .6)
+    plt.title('T=5')
     # plt.show()
     plt.savefig(f"experiments/plots/omega_t_5_vary_k_vary_alg_n_{len(subset)}.png")
     plt.close()
@@ -149,14 +169,17 @@ def plot_results_omega_T(results_df):
 
     K=2
     for alg in ['gibbs', 'mh_uniform', 'mh_prior']:
-        subset = results_df.loc[:, idxs[alg, str(K), :]]
+        subset = results_df.loc[:, idxs[alg, K, :]]
         means = 1-subset.mean(0).droplevel([0,1])
         stds = subset.std(0).droplevel([0,1])
         plt.errorbar(means.index.to_list(), means.to_list(), yerr=stds/np.sqrt(len(subset)), capsize=4, label=f"{alglabels[alg]}")
 
     plt.ylabel('$1 - \omega_{\pi}$')
-    plt.xlabel('T')
-    # plt.ylim(.4, 1.)
+    plt.xlabel('Trajectory Length (T)')
+    plt.xticks(means.index.to_list())
+    plt.yticks(np.linspace(0, .6, 7))
+    plt.ylim(0, .6)
+    plt.title('K=2')
     plt.legend()
     # plt.show()
     plt.savefig(f"experiments/plots/omega_k_2_vary_t_vary_alg_n_{len(subset)}.png")
@@ -181,8 +204,15 @@ def plot_results_omega_T(results_df):
 
 
 def loadresults(N):
-    results_df = pd.read_csv(f'experiments/data/omega_K_T_df_n_{N}.csv', header=[0, 1, 2], index_col=0)
+    # results_df = pd.read_csv(f'experiments/data/omega_K_T_df_n_{N}.csv', header=[0, 1, 2], index_col=0)
+    # results_df.columns.names = ['alg', 'K', 'T']
+
+    from compute_tmix import load_pi_omega
+    _, omega_dict = load_pi_omega()
+
+    results_df = pd.DataFrame(omega_dict)
     results_df.columns.names = ['alg', 'K', 'T']
+
     return results_df
 
 
